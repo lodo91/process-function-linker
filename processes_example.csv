@@ -1,4 +1,11 @@
-Process_ID,Process_Name
-1,Customer onboarding
-2,Loan approval
-3,Account closure
+Process_Name
+Onboarding clienti
+Valutazione credito
+Erogazione prestito
+Gestione incassi
+Chiusura conto
+Monitoraggio frodi
+Reclami clienti
+Gestione carte
+Reportistica regolamentare
+Manutenzione sistemi
