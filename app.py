@@ -1,38 +1,99 @@
-
 import streamlit as st
 import pandas as pd
 
-st.title("Process - Function Linker")
+st.set_page_config(page_title="Process Function Mapper v2", layout="centered")
+st.title("🔗 Process Function Mapper v2")
+st.write("Mappa i processi alle funzioni — analizza un processo alla volta e salva le relazioni.")
 
-st.write("Upload your Excel or CSV files to create relationships between Processes and Functions.")
+# Upload
+st.sidebar.header("Carica file di input")
+proc_file = st.sidebar.file_uploader("File Processi (.csv o .xlsx)", type=["csv","xlsx"])
+func_file = st.sidebar.file_uploader("File Funzioni (.csv o .xlsx)", type=["csv","xlsx"])
 
-process_file = st.file_uploader("Upload Process file", type=["xlsx", "csv"])
-function_file = st.file_uploader("Upload Function file", type=["xlsx", "csv"])
+def read_file(f):
+    if f is None:
+        return None
+    name = f.name.lower()
+    if name.endswith(".xlsx"):
+        return pd.read_excel(f)
+    else:
+        return pd.read_csv(f)
 
-if process_file and function_file:
-    df_proc = pd.read_excel(process_file) if process_file.name.endswith('xlsx') else pd.read_csv(process_file)
-    df_func = pd.read_excel(function_file) if function_file.name.endswith('xlsx') else pd.read_csv(function_file)
+if proc_file and func_file:
+    df_proc = read_file(proc_file)
+    df_func = read_file(func_file)
 
-    st.write("### Process Data")
-    st.dataframe(df_proc.head())
-    st.write("### Function Data")
-    st.dataframe(df_func.head())
+    if "Process_Name" not in df_proc.columns:
+        st.error("Il file processi deve avere la colonna 'Process_Name' (es. nome del processo).")
+    elif "Function_Name" not in df_func.columns:
+        st.error("Il file funzioni deve avere la colonna 'Function_Name'.")
+    else:
+        # Session state
+        if "idx" not in st.session_state:
+            st.session_state.idx = 0
+            st.session_state.links = []
 
-    st.write("Now link processes to one or more functions.")
-    process_col = st.selectbox("Select Process column", df_proc.columns)
-    function_col = st.selectbox("Select Function column", df_func.columns)
+        total = len(df_proc)
+        idx = st.session_state.idx
 
-    if st.button("Generate Output"):
-        merged = []
-        for _, proc in df_proc.iterrows():
-            for _, func in df_func.iterrows():
-                merged.append({
-                    "Process": proc[process_col],
-                    "Function": func[function_col]
-                })
-        df_out = pd.DataFrame(merged)
-        st.success("Output created!")
-        st.dataframe(df_out.head())
-        df_out.to_excel("output.xlsx", index=False)
-        st.download_button("Download Excel", df_out.to_csv(index=False).encode("utf-8"), "output.csv", "text/csv")
+        st.sidebar.markdown(f"Processo corrente: **{idx+1} / {total}**")
+        # Show current process
+        processo = df_proc.iloc[idx]["Process_Name"]
+        st.subheader(f"Processo {idx+1} / {total}")
+        st.markdown(f"**{processo}**")
 
+        # Function selection
+        selected_funcs = st.multiselect(
+            "Seleziona una o più funzioni collegate",
+            df_func["Function_Name"].tolist()
+        )
+
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            if st.button("⬅️ Indietro") and idx>0:
+                st.session_state.idx = max(0, idx-1)
+                st.experimental_rerun()
+        with col2:
+            if st.button("💾 Conferma e passa al prossimo"):
+                # save links
+                for f in selected_funcs:
+                    st.session_state.links.append({"Process": processo, "Function": f})
+                # advance
+                if st.session_state.idx < total-1:
+                    st.session_state.idx += 1
+                    st.experimental_rerun()
+                else:
+                    st.success("Hai completato l'analisi di tutti i processi.")
+        with col3:
+            if st.button("Salta e passa al prossimo"):
+                if st.session_state.idx < total-1:
+                    st.session_state.idx += 1
+                    st.experimental_rerun()
+                else:
+                    st.success("Hai completato l'analisi di tutti i processi.")
+
+        st.markdown("---")
+        st.subheader("Collegamenti salvati (in tempo reale)")
+        if st.session_state.links:
+            df_links = pd.DataFrame(st.session_state.links)
+            st.dataframe(df_links)
+            # possibilità di rimuovere l'ultima riga
+            if st.button("🗑️ Rimuovi ultima associazione"):
+                st.session_state.links.pop()
+                st.experimental_rerun()
+            # export
+            st.download_button(
+                "⬇️ Esporta in Excel (una riga per Process-Funzione)",
+                df_links.to_csv(index=False).encode("utf-8"),
+                "mappatura_process_function.csv",
+                "text/csv"
+            )
+        else:
+            st.info("Non ci sono ancora collegamenti salvati. Usa 'Conferma e passa al prossimo' per salvare.")
+else:
+    st.info("Carica i file di Processi e Funzioni (colonne richieste: 'Process_Name' e 'Function_Name').")
+    st.markdown("""
+    ### Esempio file CSV
+    - processi: colonne -> Process_Name
+    - funzioni: colonne -> Function_Name
+    """)
