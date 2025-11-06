@@ -52,7 +52,7 @@ if proc_file and func_file:
         with col1:
             if st.button("⬅️ Indietro") and idx>0:
                 st.session_state.idx = max(0, idx-1)
-                st.experimental_rerun()
+                st.rerun()
         with col2:
             if st.button("💾 Conferma e passa al prossimo"):
                 # save links
