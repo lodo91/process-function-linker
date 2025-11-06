@@ -59,9 +59,9 @@ if proc_file and func_file:
                 st.rerun()
         with col2:
             if st.button("💾 Conferma e passa al prossimo"):
-            # 💾 salva i link scelti
-            for f in selected_funcs:
-            st.session_state.links.append({"Process": processo, "Function": f})
+                # 💾 salva i link scelti
+                for f in selected_funcs:
+                st.session_state.links.append({"Process": processo, "Function": f})
 
         # 🧹 reset della selezione (pulisce il multiselect)
         st.session_state.selected_funcs = []
