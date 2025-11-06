@@ -43,7 +43,9 @@ if proc_file and func_file:
         st.markdown(f"**{processo}**")
 
         # Function selection
-        selected_funcs = st.multiselect(
+       if "selected_funcs" not in st.session_state:
+    st.session_state.selected_funcs = []
+selected_funcs = st.multiselect(
             "Seleziona una o più funzioni collegate",
             df_func["Function_Name"].tolist()
         )
