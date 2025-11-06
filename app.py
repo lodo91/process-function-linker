@@ -31,7 +31,10 @@ if proc_file and func_file:
         # Session state
         if "idx" not in st.session_state:
             st.session_state.idx = 0
+        if "links" not in st.session_state:
             st.session_state.links = []
+        if "selected_funcs" not in st.session_state:
+            st.session_state.selected_funcs = []
 
         total = len(df_proc)
         idx = st.session_state.idx
@@ -43,13 +46,10 @@ if proc_file and func_file:
         st.markdown(f"**{processo}**")
 
         # Function selection
-       if "selected_funcs" not in st.session_state:
-    st.session_state.selected_funcs = []
-
-selected_funcs = st.multiselect(
-    "Seleziona una o più funzioni per questo processo:",
-    lista_funzioni,
-    default=st.session_state.selected_funcs
+        selected_funcs = st.multiselect(
+        "Seleziona una o più funzioni per questo processo:",
+        lista_funzioni,
+        default=st.session_state.selected_funcs
 )
 
         col1, col2, col3 = st.columns(3)
