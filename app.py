@@ -52,7 +52,7 @@ if proc_file and func_file:
         with col1:
             if st.button("⬅️ Indietro") and idx>0:
                 st.session_state.idx = max(0, idx-1)
-                st.experimental_rerun()
+                rerun()
         with col2:
             if st.button("💾 Conferma e passa al prossimo"):
                 # save links
@@ -61,14 +61,14 @@ if proc_file and func_file:
                 # advance
                 if st.session_state.idx < total-1:
                     st.session_state.idx += 1
-                    st.experimental_rerun()
+                    rerun()
                 else:
                     st.success("Hai completato l'analisi di tutti i processi.")
         with col3:
             if st.button("Salta e passa al prossimo"):
                 if st.session_state.idx < total-1:
                     st.session_state.idx += 1
-                    st.experimental_rerun()
+                    rerun()
                 else:
                     st.success("Hai completato l'analisi di tutti i processi.")
 
@@ -80,7 +80,7 @@ if proc_file and func_file:
             # possibilità di rimuovere l'ultima riga
             if st.button("🗑️ Rimuovi ultima associazione"):
                 st.session_state.links.pop()
-                st.experimental_rerun()
+                rerun()
             # export
             st.download_button(
                 "⬇️ Esporta in Excel (una riga per Process-Funzione)",
