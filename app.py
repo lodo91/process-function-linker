@@ -1,59 +1,59 @@
 import streamlit as st
 import pandas as pd
-from io import BytesIO
 
 st.set_page_config(page_title="Process-Function Linker", layout="wide")
 
-st.title("🔗 Process–Function Linker")
+st.title("Process ⇄ Function Linker")
+st.markdown("Upload your process and function lists, then link each process to one or more functions.")
 
-# --- Upload dei file Excel ---
-st.sidebar.header("📂 Upload data")
-uploaded_processes = st.sidebar.file_uploader("Upload Process List (.xlsx)", type=["xlsx"])
-uploaded_functions = st.sidebar.file_uploader("Upload Function List (.xlsx)", type=["xlsx"])
+# File upload
+uploaded_processes = st.sidebar.file_uploader("Upload Process List (.xlsx, .xls, .csv)", type=["xlsx", "xls", "csv"])
+uploaded_functions = st.sidebar.file_uploader("Upload Function List (.xlsx, .xls, .csv)", type=["xlsx", "xls", "csv"])
 
-# Session state per i link salvati
-if "links" not in st.session_state:
-    st.session_state.links = []
-
-# --- Caricamento dati ---
 if uploaded_processes and uploaded_functions:
-    processes_df = pd.read_excel(uploaded_processes)
-    functions_df = pd.read_excel(uploaded_functions)
 
-    process_col = st.sidebar.selectbox("Select Process column", processes_df.columns)
-    function_col = st.sidebar.selectbox("Select Function column", functions_df.columns)
+    def load_file(file):
+        if file.name.endswith(".csv"):
+            return pd.read_csv(file)
+        else:
+            return pd.read_excel(file)
 
-    st.subheader("1️⃣ Select a Process")
-    selected_process = st.selectbox("Process:", processes_df[process_col])
+    processes_df = load_file(uploaded_processes)
+    functions_df = load_file(uploaded_functions)
 
-    st.subheader("2️⃣ Select one or more Functions")
-    selected_functions = st.multiselect("Functions:", functions_df[function_col])
+    st.subheader("Process Data")
+    st.dataframe(processes_df)
 
-    # Bottone per salvare il collegamento
-    if st.button("💾 Save link"):
-        for f in selected_functions:
-            st.session_state.links.append({"Process": selected_process, "Function": f})
-        st.success(f"Linked {selected_process} to {len(selected_functions)} function(s).")
-        st.rerun()  # <— sostituito e funzionante su Streamlit Cloud
+    st.subheader("Function Data")
+    st.dataframe(functions_df)
 
-    # Mostra i link salvati
-    if st.session_state.links:
-        st.subheader("3️⃣ Saved links")
-        links_df = pd.DataFrame(st.session_state.links)
-        st.dataframe(links_df, use_container_width=True)
+    if "links" not in st.session_state:
+        st.session_state.links = []
+        st.session_state.current_index = 0
 
-        # Esporta in Excel
-        output = BytesIO()
-        with pd.ExcelWriter(output, engine="openpyxl") as writer:
-            links_df.to_excel(writer, index=False, sheet_name="Links")
-        excel_data = output.getvalue()
+    processes = processes_df.iloc[:, 0].tolist()
+    functions = functions_df.iloc[:, 0].tolist()
 
-        st.download_button(
-            label="⬇️ Download Excel",
-            data=excel_data,
-            file_name="process_function_links.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        )
+    if st.session_state.current_index < len(processes):
+        current_process = processes[st.session_state.current_index]
+        st.subheader(f"Process {st.session_state.current_index + 1}/{len(processes)}: {current_process}")
 
+        selected_functions = st.multiselect("Select one or more functions for this process:", functions)
+
+        if st.button("Confirm and go to next"):
+            for func in selected_functions:
+                st.session_state.links.append({"Process": current_process, "Function": func})
+            st.session_state.current_index += 1
+            st.experimental_rerun()
+
+    else:
+        st.success("✅ All processes have been linked!")
+        result_df = pd.DataFrame(st.session_state.links)
+        st.dataframe(result_df)
+
+        output_name = "process_function_links.xlsx"
+        result_df.to_excel(output_name, index=False)
+        with open(output_name, "rb") as f:
+            st.download_button("Download Output File", data=f, file_name=output_name)
 else:
-    st.info("Please upload both the Process and Function Excel files to start.")
+    st.info("Please upload both files to start.")
