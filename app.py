@@ -47,9 +47,9 @@ if proc_file and func_file:
 
         # Function selection
         selected_funcs = st.multiselect(
-        "Seleziona una o più funzioni per questo processo:",
-        lista_funzioni,
-        default=st.session_state.selected_funcs
+            "Seleziona una o più funzioni collegate",
+            df_func["Function_Name"].tolist()
+        )
 )
 
         col1, col2, col3 = st.columns(3)
