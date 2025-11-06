@@ -58,8 +58,8 @@ if proc_file and func_file:
                 st.session_state.idx = max(0, idx-1)
                 st.rerun()
         with col2:
-        if st.button("💾 Conferma e passa al prossimo"):
-        # 💾 salva i link scelti
+            if st.button("💾 Conferma e passa al prossimo"):
+            # 💾 salva i link scelti
             for f in selected_funcs:
             st.session_state.links.append({"Process": processo, "Function": f})
 
