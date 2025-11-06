@@ -50,8 +50,6 @@ if proc_file and func_file:
             "Seleziona una o più funzioni collegate",
             df_func["Function_Name"].tolist()
         )
-)
-
         col1, col2, col3 = st.columns(3)
         with col1:
             if st.button("⬅️ Indietro") and idx>0:
