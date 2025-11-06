@@ -45,10 +45,12 @@ if proc_file and func_file:
         # Function selection
        if "selected_funcs" not in st.session_state:
     st.session_state.selected_funcs = []
+
 selected_funcs = st.multiselect(
-            "Seleziona una o più funzioni collegate",
-            df_func["Function_Name"].tolist()
-        )
+    "Seleziona una o più funzioni per questo processo:",
+    lista_funzioni,
+    default=st.session_state.selected_funcs
+)
 
         col1, col2, col3 = st.columns(3)
         with col1:
