@@ -54,20 +54,19 @@ if proc_file and func_file:
     for key, val in {
         "links": [],
         "reset_counter": 0,
-        "dominio_sel": "",
-        "sottodominio_sel": "",
-        "processo_sel": "",
-        "sottoprocesso_sel": ""
+        "reset_proc_counter": 0,
     }.items():
         if key not in st.session_state:
             st.session_state[key] = val
 
-    # Dropdown multilivello
+    # Dropdown multilivello (con chiavi dinamiche per reset)
+    proc_key_prefix = f"proc_{st.session_state.reset_proc_counter}"
+
     domini = sorted(df_proc["Dominio"].dropna().unique().tolist())
     dominio_sel = st.selectbox(
         "Seleziona Dominio",
         options=[""] + domini,
-        key="dominio_sel"
+        key=f"{proc_key_prefix}_dominio_sel"
     )
 
     if dominio_sel:
@@ -77,7 +76,7 @@ if proc_file and func_file:
     sottodominio_sel = st.selectbox(
         "Seleziona Sottodominio",
         options=[""] + sottodomini,
-        key="sottodominio_sel"
+        key=f"{proc_key_prefix}_sottodominio_sel"
     )
 
     if sottodominio_sel:
@@ -92,7 +91,7 @@ if proc_file and func_file:
     processo_sel = st.selectbox(
         "Seleziona Processo",
         options=[""] + processi,
-        key="processo_sel"
+        key=f"{proc_key_prefix}_processo_sel"
     )
 
     if processo_sel:
@@ -105,7 +104,7 @@ if proc_file and func_file:
     sottoprocesso_sel = st.selectbox(
         "Seleziona Sottoprocesso (opzionale)",
         options=[""] + sottoprocessi,
-        key="sottoprocesso_sel"
+        key=f"{proc_key_prefix}_sottoprocesso_sel"
     )
 
     st.markdown("---")
@@ -132,13 +131,9 @@ if proc_file and func_file:
                     "Function": fn
                 })
             st.success("Collegamento salvato.")
-
-            # 🔁 Reset completo: processi + funzioni
-            st.session_state.dominio_sel = ""
-            st.session_state.sottodominio_sel = ""
-            st.session_state.processo_sel = ""
-            st.session_state.sottoprocesso_sel = ""
-            st.session_state.reset_counter += 1  # forza reset multiselect
+            # reset di funzioni e dropdown processi
+            st.session_state.reset_counter += 1
+            st.session_state.reset_proc_counter += 1
             st.rerun()
 
     with col2:
@@ -153,11 +148,8 @@ if proc_file and func_file:
     with col3:
         if st.button("🔄 Reset tutto"):
             st.session_state.links = []
-            st.session_state.dominio_sel = ""
-            st.session_state.sottodominio_sel = ""
-            st.session_state.processo_sel = ""
-            st.session_state.sottoprocesso_sel = ""
             st.session_state.reset_counter += 1
+            st.session_state.reset_proc_counter += 1
             st.success("Tutto resettato.")
             st.rerun()
 
@@ -182,3 +174,4 @@ if proc_file and func_file:
 
 else:
     st.info("Carica i file 'processi.xlsx' e 'funzioni.xlsx' nella sidebar per iniziare.")
+
