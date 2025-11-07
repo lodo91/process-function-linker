@@ -112,11 +112,8 @@ if proc_file and func_file:
             })
 
         # ✅ reset della selezione funzioni
-        if "selected_functions" in st.session_state:
-            st.session_state.selected_functions = []
-        if "selected" in st.session_state:
-            st.session_state.selected = []
-
+        st.session_state.func_selector = []
+        st.session_state.selected_functions = []
         st.success("Collegamento salvato.")
         st.rerun()
         
