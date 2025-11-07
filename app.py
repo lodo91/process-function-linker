@@ -10,6 +10,9 @@ st.sidebar.header("Carica i file di input")
 proc_file = st.sidebar.file_uploader("File Processi (.xlsx)", type=["xlsx"])
 func_file = st.sidebar.file_uploader("File Funzioni (.xlsx)", type=["xlsx"])
 
+
+# ----------------------------- LETTURA FILE ------------------------------
+
 def read_proc_file(f):
     df = pd.read_excel(f)
     expected = ['Dominio','Sottodominio','Processo','Sottoprocesso']
@@ -29,85 +32,94 @@ def read_proc_file(f):
 def read_func_file(f):
     df = pd.read_excel(f)
     if 'Function_Name' in df.columns:
-        return df[['Function_Name']].rename(columns={'Function_Name':'Function_Name'})
+        return df[['Function_Name']]
     elif 'Funzione' in df.columns:
         return df[['Funzione']].rename(columns={'Funzione':'Function_Name'})
     else:
         return df[[df.columns[0]]].rename(columns={df.columns[0]:'Function_Name'})
 
+
+# ----------------------------- LOGICA APP ------------------------------
+
 if proc_file and func_file:
     df_proc = read_proc_file(proc_file)
     df_func = read_func_file(func_file)
 
-    st.sidebar.success("File caricati correttamente")
-    st.subheader("Anteprima Processi (prime righe)")
+    st.sidebar.success("File caricati correttamente ✅")
+
+    st.subheader("Anteprima Processi")
     st.dataframe(df_proc.head())
 
-    st.subheader("Anteprima Funzioni (prime righe)")
+    st.subheader("Anteprima Funzioni")
     st.dataframe(df_func.head())
 
+    # Init session storage
     if "links" not in st.session_state:
         st.session_state.links = []
-    if "selected_functions" not in st.session_state:
-        st.session_state.selected_functions = []
-    if "_reset_flag" not in st.session_state:   # 🟨 aggiunto per gestire reset
-        st.session_state["_reset_flag"] = False
+    if "func_selector" not in st.session_state:
+        st.session_state.func_selector = []
+    if "_reset_flag" not in st.session_state:
+        st.session_state._reset_flag = False
 
-    domini = sorted(df_proc['Dominio'].unique().tolist())
-    domini = [d for d in domini if d != ""]
-    dominio_sel = st.selectbox("Seleziona Dominio", options=["-- scegli --"] + domini)
+    # ----------------------------- DROPDOWN ------------------------------
 
-    sottodominio_sel = None
-    processo_sel = None
-    sottoprocesso_sel = None
+    domini = sorted([d for d in df_proc["Dominio"].unique() if d])
+    dominio_sel = st.selectbox("Seleziona Dominio", ["-- scegli --"] + domini)
 
-    if dominio_sel and dominio_sel != "-- scegli --":
-        sottodomini = sorted(df_proc[df_proc['Dominio']==dominio_sel]['Sottodominio'].unique().tolist())
-        sottodomini = [s for s in sottodomini if s != ""]
-        sottodominio_sel = st.selectbox("Seleziona Sottodominio", options=["-- scegli --"] + sottodomini)
+    if dominio_sel != "-- scegli --":
+        df1 = df_proc[df_proc["Dominio"] == dominio_sel]
+        sottodomini = sorted([s for s in df1["Sottodominio"].unique() if s])
+        sottodominio_sel = st.selectbox("Seleziona Sottodominio", ["-- scegli --"] + sottodomini)
     else:
-        st.info("Scegli un Dominio per filtrare i livelli successivi.")
+        sottodominio_sel = None
 
     if sottodominio_sel and sottodominio_sel != "-- scegli --":
-        processi = sorted(df_proc[(df_proc['Dominio']==dominio_sel) & (df_proc['Sottodominio']==sottodominio_sel)]['Processo'].unique().tolist())
-        processi = [p for p in processi if p != ""]
-        processo_sel = st.selectbox("Seleziona Processo", options=["-- scegli --"] + processi)
-    elif dominio_sel and dominio_sel != "-- scegli --":
-        processi = sorted(df_proc[df_proc['Dominio']==dominio_sel]['Processo'].unique().tolist())
-        processi = [p for p in processi if p != ""]
-        processo_sel = st.selectbox("Seleziona Processo (filtrato per Dominio)", options=["-- scegli --"] + processi)
+        df2 = df1[df1["Sottodominio"] == sottodominio_sel]
+        processi = sorted([p for p in df2["Processo"].unique() if p])
+        processo_sel = st.selectbox("Seleziona Processo", ["-- scegli --"] + processi)
+    else:
+        processo_sel = None
 
     if processo_sel and processo_sel != "-- scegli --":
-        sottoprocessi = sorted(df_proc[(df_proc['Dominio']==dominio_sel) & (df_proc['Processo']==processo_sel)]['Sottoprocesso'].unique().tolist())
-        sottoprocessi = [sp for sp in sottoprocessi if sp != ""]
+        df3 = df2[df2["Processo"] == processo_sel]
+        sottoprocessi = sorted([sp for sp in df3["Sottoprocesso"].unique() if sp])
         if sottoprocessi:
-            sottoprocesso_sel = st.selectbox("Seleziona Sottoprocesso (opzionale)", options=["-- nessuno --"] + sottoprocessi)
+            sottoprocesso_sel = st.selectbox("Seleziona Sottoprocesso", ["-- nessuno --"] + sottoprocessi)
         else:
             sottoprocesso_sel = "-- nessuno --"
+    else:
+        sottoprocesso_sel = None
+
+    # ----------------------------- MULTISELECT FUNZIONI ------------------------------
 
     st.markdown("---")
     st.subheader("Seleziona Funzioni collegate")
-    functions = df_func['Function_Name'].tolist()
+
+    functions = df_func["Function_Name"].tolist()
+
     selected = st.multiselect(
         "Seleziona le funzioni da collegare",
         options=functions,
-        default=st.session_state.get("selected_functions", []),
-        key="selected_functions"
+        key="func_selector"   # ✅ usa chiave nuova, NON in conflitto
     )
 
-    # 🟨 blocco che resetta la selezione se flag attivo
-    if st.session_state.get("_reset_flag", False):
-        st.session_state.selected_functions = []
-        st.session_state["_reset_flag"] = False
+    # Reset applicato dopo il rerun
+    if st.session_state._reset_flag:
+        st.session_state.func_selector = []
+        st.session_state._reset_flag = False
+
+
+    # ----------------------------- CONFERMA COLLEGAMENTO ------------------------------
 
     col1, col2, col3 = st.columns([1,1,1])
-    
+
     with col1:
         if st.button("💾 Conferma collegamento"):
-            dominio_val = dominio_sel if dominio_sel and dominio_sel != "-- scegli --" else ""
-            sottodominio_val = sottodominio_sel if sottodominio_sel and sottodominio_sel not in ["-- scegli --","-- nessuno --"] else ""
-            processo_val = processo_sel if processo_sel and processo_sel != "-- scegli --" else ""
-            sottoprocesso_val = sottoprocesso_sel if sottoprocesso_sel and sottoprocesso_sel != "-- nessuno --" else ""
+
+            dominio_val = dominio_sel if dominio_sel not in ["-- scegli --"] else ""
+            sottodominio_val = sottodominio_sel if sottodominio_sel not in ["-- scegli --"] else ""
+            processo_val = processo_sel if processo_sel not in ["-- scegli --"] else ""
+            sottoprocesso_val = sottoprocesso_sel if sottoprocesso_sel not in ["-- nessuno --"] else ""
 
             for fn in selected:
                 st.session_state.links.append({
@@ -118,17 +130,19 @@ if proc_file and func_file:
                     "Function": fn
                 })
 
-            st.success("Collegamento salvato.")
-            
-            # 🟨 attiva flag per reset successivo
-            st.session_state["_reset_flag"] = True  
+            st.success("Collegamento salvato ✅")
+
+            # ✅ reset sicuro (rinviato al prossimo ciclo)
+            st.session_state._reset_flag = True
             st.rerun()
-        
+
+
+    # ----------------------------- RIMOZIONE / RESET ------------------------------
+
     with col2:
         if st.button("🗑️ Rimuovi ultima associazione"):
             if st.session_state.links:
                 st.session_state.links.pop()
-                st.success("Ultima associazione rimossa.")
                 st.rerun()
             else:
                 st.info("Non ci sono associazioni da rimuovere.")
@@ -136,23 +150,30 @@ if proc_file and func_file:
     with col3:
         if st.button("🔄 Reset tutto"):
             st.session_state.links = []
-            st.session_state.selected_functions = []
-            st.session_state["_reset_flag"] = False
-            st.success("Tutto resettato.")
+            st.session_state.func_selector = []
             st.rerun()
+
+
+    # ----------------------------- ESPORTAZIONE ------------------------------
 
     st.markdown("---")
     st.subheader("Collegamenti salvati")
+
     if st.session_state.links:
         df_links = pd.DataFrame(st.session_state.links)
         st.dataframe(df_links)
+
         output = BytesIO()
         with pd.ExcelWriter(output, engine="openpyxl") as writer:
             df_links.to_excel(writer, index=False, sheet_name="Links")
-        data = output.getvalue()
-        st.download_button("⬇️ Esporta in Excel", data=data, file_name="mappatura_v3.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-    else:
-        st.info("Ancora nessun collegamento salvato. Usa 'Conferma collegamento' per iniziare.")
+
+        st.download_button(
+            "⬇️ Esporta in Excel",
+            data=output.getvalue(),
+            file_name="mappatura_v3.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
 
 else:
     st.info("Carica i file 'processi.xlsx' e 'funzioni.xlsx' nella sidebar per iniziare.")
+
