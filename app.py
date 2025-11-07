@@ -87,11 +87,11 @@ if proc_file and func_file:
     st.subheader("Seleziona Funzioni collegate")
     functions = df_func['Function_Name'].tolist()
     selected = st.multiselect(
-    "Seleziona le funzioni da collegare",
-    options=df_funzioni["Function"].unique(),
-    default=st.session_state.get("selected_functions", []),
-    key="selected_functions"
-)
+        "Seleziona le funzioni da collegare",
+        options=functions,
+        default=st.session_state.get("selected_functions", []),
+        key="selected_functions"
+    )
 
     col1, col2, col3 = st.columns([1,1,1])
     
