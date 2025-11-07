@@ -96,11 +96,11 @@ if proc_file and func_file:
     col1, col2, col3 = st.columns([1,1,1])
     
     with col1:
-    if st.button("💾 Conferma collegamento"):
-        dominio_val = dominio_sel if dominio_sel and dominio_sel != "-- scegli --" else ""
-        sottodominio_val = sottodominio_sel if sottodominio_sel and sottodominio_sel not in ["-- scegli --","-- nessuno --"] else ""
-        processo_val = processo_sel if processo_sel and processo_sel != "-- scegli --" else ""
-        sottoprocesso_val = sottoprocesso_sel if sottoprocesso_sel and sottoprocesso_sel != "-- nessuno --" else ""
+        if st.button("💾 Conferma collegamento"):
+            dominio_val = dominio_sel if dominio_sel and dominio_sel != "-- scegli --" else ""
+            sottodominio_val = sottodominio_sel if sottodominio_sel and sottodominio_sel not in ["-- scegli --","-- nessuno --"] else ""
+            processo_val = processo_sel if processo_sel and processo_sel != "-- scegli --" else ""
+            sottoprocesso_val = sottoprocesso_sel if sottoprocesso_sel and sottoprocesso_sel != "-- nessuno --" else ""
 
         for fn in selected:
             st.session_state.links.append({
