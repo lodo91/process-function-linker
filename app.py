@@ -1,9 +1,10 @@
 import streamlit as st
 import pandas as pd
 
-# === Caricamento file ===
-st.title("Process Function Linker")
+st.title("🔗 Process Function Mapper v3")
+st.write("Mappa i processi alle funzioni usando dropdown multilivello (Dominio → Sottodominio → Processo → Sottoprocesso).")
 
+# Caricamento file Excel
 uploaded_proc = st.file_uploader("Carica file Processi (Excel)", type=["xlsx"])
 uploaded_func = st.file_uploader("Carica file Funzioni (Excel)", type=["xlsx"])
 
@@ -11,87 +12,96 @@ if uploaded_proc and uploaded_func:
     df_proc = pd.read_excel(uploaded_proc)
     df_func = pd.read_excel(uploaded_func)
 
-    st.success("File caricati con successo!")
+    st.markdown("### Anteprima Processi (prime righe)")
+    st.dataframe(df_proc.head())
 
-    # === Selezione Dominio ===
-    st.markdown("---")
+    st.markdown("### Anteprima Funzioni (prime righe)")
+    st.dataframe(df_func.head())
+
+    # Inizializzazione stato
+    for key, default in [
+        ("selected_domain", ""),
+        ("selected_subdomain", ""),
+        ("selected_process", ""),
+        ("selected_subprocess", ""),
+        ("selected_functions", []),
+        ("links", [])
+    ]:
+        if key not in st.session_state:
+            st.session_state[key] = default
+
+    # Dropdown multilivello
+    st.subheader("Seleziona Dominio")
+    domains = sorted(df_proc["Dominio"].dropna().unique().tolist())
+    st.session_state.selected_domain = st.selectbox("Seleziona Dominio", [""] + domains, index=0, key="selected_domain")
+
+    if st.session_state.selected_domain:
+        subdomains = sorted(df_proc[df_proc["Dominio"] == st.session_state.selected_domain]["Sottodominio"].dropna().unique().tolist())
+    else:
+        subdomains = []
+
+    st.subheader("Seleziona Sottodominio")
+    st.session_state.selected_subdomain = st.selectbox("Seleziona Sottodominio", [""] + subdomains, index=0, key="selected_subdomain")
+
+    if st.session_state.selected_subdomain:
+        processes = sorted(df_proc[
+            (df_proc["Dominio"] == st.session_state.selected_domain) &
+            (df_proc["Sottodominio"] == st.session_state.selected_subdomain)
+        ]["Processo"].dropna().unique().tolist())
+    else:
+        processes = []
+
     st.subheader("Seleziona Processo")
+    st.session_state.selected_process = st.selectbox("Seleziona Processo", [""] + processes, index=0, key="selected_process")
 
-    selected_domain = st.selectbox(
-        "Dominio",
-        options=[""] + sorted(df_proc["Dominio"].dropna().unique().tolist()),
-        index=0,
-        key="selected_domain"
-    )
+    if st.session_state.selected_process:
+        subprocesses = sorted(df_proc[
+            (df_proc["Dominio"] == st.session_state.selected_domain) &
+            (df_proc["Sottodominio"] == st.session_state.selected_subdomain) &
+            (df_proc["Processo"] == st.session_state.selected_process)
+        ]["Sottoprocesso"].dropna().unique().tolist())
+    else:
+        subprocesses = []
 
-    filtered_subdomains = (
-        df_proc[df_proc["Dominio"] == selected_domain]["Sottodominio"].dropna().unique().tolist()
-        if selected_domain else []
-    )
+    st.subheader("Seleziona Sottoprocesso (opzionale)")
+    st.session_state.selected_subprocess = st.selectbox("Seleziona Sottoprocesso", [""] + subprocesses, index=0, key="selected_subprocess")
 
-    selected_subdomain = st.selectbox(
-        "Sottodominio",
-        options=[""] + sorted(filtered_subdomains),
-        index=0,
-        key="selected_subdomain"
-    )
-
-    filtered_processes = (
-        df_proc[
-            (df_proc["Dominio"] == selected_domain) &
-            (df_proc["Sottodominio"] == selected_subdomain)
-        ]["Processo"].dropna().unique().tolist()
-        if selected_subdomain else []
-    )
-
-    selected_process = st.selectbox(
-        "Processo",
-        options=[""] + sorted(filtered_processes),
-        index=0,
-        key="selected_process"
-    )
-
-    # === Selezione Funzioni ===
-    st.markdown("---")
+    # Selezione funzioni
     st.subheader("Seleziona Funzioni collegate")
-
-    functions = df_func["Function_Name"].dropna().unique().tolist()
-
-    selected_functions = st.multiselect(
+    available_functions = sorted(df_func["Function_Name"].dropna().unique().tolist())
+    st.session_state.selected_functions = st.multiselect(
         "Seleziona le funzioni da collegare",
-        options=functions,
-        default=st.session_state.get("selected_functions", []),
+        options=available_functions,
+        default=st.session_state.selected_functions,
         key="selected_functions"
     )
 
-    # === Bottone di conferma ===
-    if "collegamenti" not in st.session_state:
-        st.session_state.collegamenti = []
-
+    # Bottone di conferma
     if st.button("Confermo collegamento"):
-        if selected_functions and selected_process:
-            # Salvataggio del collegamento
-            st.session_state.collegamenti.append({
-                "Dominio": selected_domain,
-                "Sottodominio": selected_subdomain,
-                "Processo": selected_process,
-                "Funzioni collegate": selected_functions
-            })
-            st.success("Collegamento confermato e salvato con successo!")
+        if st.session_state.selected_process and st.session_state.selected_functions:
+            new_link = {
+                "Dominio": st.session_state.selected_domain,
+                "Sottodominio": st.session_state.selected_subdomain,
+                "Processo": st.session_state.selected_process,
+                "Sottoprocesso": st.session_state.selected_subprocess,
+                "Funzioni collegate": ", ".join(st.session_state.selected_functions)
+            }
+            st.session_state.links.append(new_link)
+            st.success("✅ Collegamento salvato con successo!")
 
-            # Reset delle selezioni
-            for key in ["selected_functions", "selected_domain", "selected_subdomain", "selected_process"]:
+            # 🔁 Reset di tutto: 4 livelli di processo + funzioni
+            for key in ["selected_domain", "selected_subdomain", "selected_process", "selected_subprocess", "selected_functions"]:
                 if key in st.session_state:
                     del st.session_state[key]
             st.rerun()
         else:
-            st.warning("Seleziona almeno un processo e una funzione prima di confermare.")
+            st.warning("⚠️ Seleziona almeno un processo e una funzione prima di confermare.")
 
-    # === Visualizzazione collegamenti ===
-    if st.session_state.collegamenti:
-        st.markdown("---")
-        st.subheader("Collegamenti confermati")
-        st.dataframe(pd.DataFrame(st.session_state.collegamenti))
+    # Visualizza i collegamenti salvati
+    if st.session_state.links:
+        st.markdown("### Collegamenti salvati")
+        st.dataframe(pd.DataFrame(st.session_state.links))
 
 else:
-    st.info("Carica entrambi i file per iniziare.")
+    st.info("⬆️ Carica entrambi i file per iniziare.")
+
