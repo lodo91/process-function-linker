@@ -86,27 +86,40 @@ if proc_file and func_file:
     st.markdown("---")
     st.subheader("Seleziona Funzioni collegate")
     functions = df_func['Function_Name'].tolist()
-    selected = st.multiselect("Seleziona una o più funzioni:", options=functions, default=st.session_state.selected_functions)
+    selected = st.multiselect(
+    "Seleziona le funzioni da collegare",
+    options=df_funzioni["Function"].unique(),
+    default=st.session_state.get("selected_functions", []),
+    key="selected_functions"
+)
 
     col1, col2, col3 = st.columns([1,1,1])
+    
     with col1:
-        if st.button("💾 Conferma collegamento"):
-            dominio_val = dominio_sel if dominio_sel and dominio_sel != "-- scegli --" else ""
-            sottodominio_val = sottodominio_sel if sottodominio_sel and sottodominio_sel not in ["-- scegli --","-- nessuno --"] else ""
-            processo_val = processo_sel if processo_sel and processo_sel != "-- scegli --" else ""
-            sottoprocesso_val = sottoprocesso_sel if sottoprocesso_sel and sottoprocesso_sel != "-- nessuno --" else ""
-            for fn in selected:
-                st.session_state.links.append({
-                    "Dominio": dominio_val,
-                    "Sottodominio": sottodominio_val,
-                    "Processo": processo_val,
-                    "Sottoprocesso": sottoprocesso_val,
-                    "Function": fn
-                })
-            st.session_state.selected_functions = []
-            st.success("Collegamento salvato.")
-            st.rerun()
+    if st.button("💾 Conferma collegamento"):
+        dominio_val = dominio_sel if dominio_sel and dominio_sel != "-- scegli --" else ""
+        sottodominio_val = sottodominio_sel if sottodominio_sel and sottodominio_sel not in ["-- scegli --","-- nessuno --"] else ""
+        processo_val = processo_sel if processo_sel and processo_sel != "-- scegli --" else ""
+        sottoprocesso_val = sottoprocesso_sel if sottoprocesso_sel and sottoprocesso_sel != "-- nessuno --" else ""
 
+        for fn in selected:
+            st.session_state.links.append({
+                "Dominio": dominio_val,
+                "Sottodominio": sottodominio_val,
+                "Processo": processo_val,
+                "Sottoprocesso": sottoprocesso_val,
+                "Function": fn
+            })
+
+        # ✅ reset della selezione funzioni
+        if "selected_functions" in st.session_state:
+            st.session_state.selected_functions = []
+        if "selected" in st.session_state:
+            st.session_state.selected = []
+
+        st.success("Collegamento salvato.")
+        st.rerun()
+        
     with col2:
         if st.button("🗑️ Rimuovi ultima associazione"):
             if st.session_state.links:
