@@ -1,4 +1,4 @@
-import streamlit as st
+import streamlit as st 
 import pandas as pd
 from io import BytesIO
 
@@ -37,7 +37,7 @@ def read_func_file(f):
 
 if proc_file and func_file:
     df_proc = read_proc_file(proc_file)
-    df_func = read_func_file(func_file)
+    df_func = read_func_file(func_file)  # 🟨 **corretto: uso df_func e non df_funzioni**
 
     st.sidebar.success("File caricati correttamente")
     st.subheader("Anteprima Processi (prime righe)")
@@ -85,10 +85,11 @@ if proc_file and func_file:
 
     st.markdown("---")
     st.subheader("Seleziona Funzioni collegate")
-    functions = df_func['Function_Name'].tolist()
+    
+    functions = df_func['Function_Name'].tolist()  # 🟨 **uso coerente di df_func**
     selected = st.multiselect(
         "Seleziona le funzioni da collegare",
-        options=functions,
+        options=functions,  # 🟨 **uso coerente di functions**
         default=st.session_state.get("selected_functions", []),
         key="selected_functions"
     )
@@ -102,20 +103,20 @@ if proc_file and func_file:
             processo_val = processo_sel if processo_sel and processo_sel != "-- scegli --" else ""
             sottoprocesso_val = sottoprocesso_sel if sottoprocesso_sel and sottoprocesso_sel != "-- nessuno --" else ""
 
-        for fn in selected:
-            st.session_state.links.append({
-                "Dominio": dominio_val,
-                "Sottodominio": sottodominio_val,
-                "Processo": processo_val,
-                "Sottoprocesso": sottoprocesso_val,
-                "Function": fn
-            })
+            for fn in selected:
+                st.session_state.links.append({
+                    "Dominio": dominio_val,
+                    "Sottodominio": sottodominio_val,
+                    "Processo": processo_val,
+                    "Sottoprocesso": sottoprocesso_val,
+                    "Function": fn
+                })
 
-        # ✅ reset della selezione funzioni
-        st.session_state.func_selector = []
-        st.session_state.selected_functions = []
-        st.success("Collegamento salvato.")
-        st.rerun()
+            # ✅ reset della selezione funzioni
+            st.session_state.func_selector = []
+            st.session_state.selected_functions = []
+            st.success("Collegamento salvato.")
+            st.rerun()
         
     with col2:
         if st.button("🗑️ Rimuovi ultima associazione"):
@@ -148,4 +149,3 @@ if proc_file and func_file:
 
 else:
     st.info("Carica i file 'processi.xlsx' e 'funzioni.xlsx' nella sidebar per iniziare.")
-
