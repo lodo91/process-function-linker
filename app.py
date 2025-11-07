@@ -37,7 +37,7 @@ def read_func_file(f):
 
 if proc_file and func_file:
     df_proc = read_proc_file(proc_file)
-    df_func = read_func_file(func_file)  # 🟨 **corretto: uso df_func e non df_funzioni**
+    df_func = read_func_file(func_file)
 
     st.sidebar.success("File caricati correttamente")
     st.subheader("Anteprima Processi (prime righe)")
@@ -50,6 +50,8 @@ if proc_file and func_file:
         st.session_state.links = []
     if "selected_functions" not in st.session_state:
         st.session_state.selected_functions = []
+    if "_reset_flag" not in st.session_state:   # 🟨 aggiunto per gestire reset
+        st.session_state["_reset_flag"] = False
 
     domini = sorted(df_proc['Dominio'].unique().tolist())
     domini = [d for d in domini if d != ""]
@@ -85,14 +87,18 @@ if proc_file and func_file:
 
     st.markdown("---")
     st.subheader("Seleziona Funzioni collegate")
-    
-    functions = df_func['Function_Name'].tolist()  # 🟨 **uso coerente di df_func**
+    functions = df_func['Function_Name'].tolist()
     selected = st.multiselect(
         "Seleziona le funzioni da collegare",
-        options=functions,  # 🟨 **uso coerente di functions**
+        options=functions,
         default=st.session_state.get("selected_functions", []),
         key="selected_functions"
     )
+
+    # 🟨 blocco che resetta la selezione se flag attivo
+    if st.session_state.get("_reset_flag", False):
+        st.session_state.selected_functions = []
+        st.session_state["_reset_flag"] = False
 
     col1, col2, col3 = st.columns([1,1,1])
     
@@ -112,10 +118,10 @@ if proc_file and func_file:
                     "Function": fn
                 })
 
-            # ✅ reset della selezione funzioni
-            st.session_state.func_selector = []
-            st.session_state.selected_functions = []
             st.success("Collegamento salvato.")
+            
+            # 🟨 attiva flag per reset successivo
+            st.session_state["_reset_flag"] = True  
             st.rerun()
         
     with col2:
@@ -131,6 +137,7 @@ if proc_file and func_file:
         if st.button("🔄 Reset tutto"):
             st.session_state.links = []
             st.session_state.selected_functions = []
+            st.session_state["_reset_flag"] = False
             st.success("Tutto resettato.")
             st.rerun()
 
